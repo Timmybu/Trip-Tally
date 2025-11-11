@@ -66,16 +66,28 @@ def create_app() -> Flask:
 	def upload_page():
 		return render_template("upload.html")
 
+	# In trip_tally/app.py
+
 	@app.route("/debug")
 	def debug_config():
 		"""Debug route to check environment variable loading"""
-		config = app.config_obj
+
+		# --- START DEBUGGING TEST ---
+		print("--- !!! THE NEW DEBUG ROUTE WAS CALLED !!! ---")
 		return {
-			"AZURE_CV_ENDPOINT": config.AZURE_CV_ENDPOINT,
-			"AZURE_CV_KEY": "***" + config.AZURE_CV_KEY[-4:] if config.AZURE_CV_KEY else "NOT SET",
-			"UPLOAD_FOLDER": config.UPLOAD_FOLDER,
-			"DATABASE_PATH": config.DATABASE_PATH,
+			"message": "THE NEW SERVER IS RUNNING!",
+			"test_value": "THIS IS PROOF"
 		}
+		# --- END DEBUGGING TEST ---
+
+		# ... (the old code is below, leave it commented out or deleted for now)
+		# config = app.config_obj
+		# return {
+		# 	"AZURE_CV_ENDPOINT": config.AZURE_CV_ENDPOINT,
+		# 	"AZURE_CV_KEY": "***" + config.AZURE_CV_KEY[-4:] if config.AZURE_CV_KEY else "NOT SET",
+		# 	"UPLOAD_FOLDER": config.UPLOAD_FOLDER,
+		# 	"DATABASE_PATH": config.DATABASE_PATH,
+		# }
 
 	@app.post("/upload")
 	def handle_upload():

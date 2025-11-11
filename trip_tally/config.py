@@ -8,7 +8,14 @@ from dotenv import load_dotenv
 def load_env():
 	# Load .env from project root if present
 	root = Path(__file__).resolve().parent
-	load_dotenv(dotenv_path=root / ".env")
+	root_env = root / ".env"
+	project_env = root.parent / ".env"
+
+	loaded = False
+	if root_env.exists():
+		loaded = load_dotenv(dotenv_path=root_env, override=True)
+	if not loaded and project_env.exists():
+		load_dotenv(dotenv_path=project_env, override=True)
 
 
 @dataclass
