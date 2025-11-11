@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <hgroup>
+    <h1>Trip Tally</h1>
+    <p>Upload your receipt, we’ll clean it up and extract the details.</p>
+  </hgroup>
+  <a href="{{ url_for('upload_page') }}" role="button">Upload a Receipt</a>
+</section>
+{% endblock %}
+
+

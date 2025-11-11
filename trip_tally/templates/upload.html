@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Upload Receipt</h2>
+  <form action="{{ url_for('handle_upload') }}" method="post" enctype="multipart/form-data">
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="file" name="file" accept="image/*" capture="environment" required />
+      <p>Drag & drop or tap to select a photo</p>
+    </div>
+    <button type="submit">Process</button>
+  </form>
+</section>
+
+<script>
+  const dz = document.getElementById('dropzone');
+  const fileInput = document.getElementById('file');
+  dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', (e) => {
+    e.preventDefault(); dz.classList.remove('dragover');
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      fileInput.files = e.dataTransfer.files;
+    }
+  });
+  dz.addEventListener('click', () => fileInput.click());
+</script>
+{% endblock %}
+
+

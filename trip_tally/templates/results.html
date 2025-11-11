@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Results</h2>
+  <div class="grid">
+    <div>
+      <h4>Warped</h4>
+      <img src="data:image/jpeg;base64,{{ warped_b64 }}" alt="Warped receipt" />
+    </div>
+    <div>
+      <h4>Preprocessed</h4>
+      <img src="data:image/jpeg;base64,{{ pre_b64 }}" alt="Preprocessed receipt" />
+    </div>
+  </div>
+  <article>
+    <header>
+      <h3>Extracted Data</h3>
+    </header>
+    <ul>
+      <li><strong>Merchant:</strong> {{ data.merchant }}</li>
+      <li><strong>Date:</strong> {{ data.date }}</li>
+      <li><strong>Total:</strong> {{ data.total }}</li>
+      <li><strong>Tax:</strong> {{ data.tax }}</li>
+    </ul>
+    {% if data.items %}
+      <details>
+        <summary>Items</summary>
+        <ul>
+          {% for item, amount in data.items %}
+            <li>{{ item }} — {{ amount }}</li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+    <details>
+      <summary>Raw Text</summary>
+      <pre style="white-space: pre-wrap">{{ data.raw_text }}</pre>
+    </details>
+  </article>
+  <a href="{{ url_for('upload_page') }}">Process another</a>
+</section>
+{% endblock %}
+
+

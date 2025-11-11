@@ -1,0 +1,24 @@
+.dropzone {
+	border: 2px dashed var(--muted-border-color);
+	padding: 2rem;
+	text-align: center;
+	border-radius: 8px;
+	background: var(--muted-border-color);
+	background: color-mix(in srgb, var(--muted-border-color) 20%, transparent);
+}
+.dropzone.dragover {
+	background: color-mix(in srgb, var(--muted-border-color) 40%, transparent);
+}
+img {
+	max-width: 100%;
+	height: auto;
+}
+.grid {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 1rem;
+}
+@media (min-width: 768px) {
+	.grid { grid-template-columns: 1fr 1fr; }
+}
+
