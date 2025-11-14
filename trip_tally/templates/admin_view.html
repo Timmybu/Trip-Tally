@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Admin View - All Receipts</h2>
+  
+  {% if receipts %}
+    <table>
+      <thead>
+        <tr>
+          <th>Driver</th>
+          <th>Merchant</th>
+          <th>Date</th>
+          <th>Total</th>
+          <th>Trip</th>
+          <th>File</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for receipt in receipts %}
+        <tr>
+          <td>{{ receipt.username or 'N/A' }}</td>
+          <td>{{ receipt.merchant or 'N/A' }}</td>
+          <td>{{ receipt.date or 'N/A' }}</td>
+          <td>${{ "%.2f"|format(receipt.total) if receipt.total else '0.00' }}</td>
+          <td>{{ receipt.trip_name or '—' }}</td>
+          <td>
+            <a href="{{ url_for('uploaded_file', filename=receipt.filename) }}" target="_blank">
+              {{ receipt.filename }}
+            </a>
+          </td>
+          <td>{{ receipt.created_at[:10] if receipt.created_at else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <article>
+      <p>No receipts found.</p>
+    </article>
+  {% endif %}
+</section>
+{% endblock %}
+

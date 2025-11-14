@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Login</h2>
+  <form method="POST" action="{{ url_for('login') }}">
+    <label for="username">
+      Username
+      <input type="text" id="username" name="username" required autofocus />
+    </label>
+    <label for="password">
+      Password
+      <input type="password" id="password" name="password" required />
+    </label>
+    <button type="submit">Login</button>
+  </form>
+  <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+</section>
+{% endblock %}
+

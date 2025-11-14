@@ -15,9 +15,18 @@
         </ul>
         <ul>
           <li><a href="{{ url_for('index') }}">Home</a></li>
+          {% if current_user.is_authenticated %}
           <li><a href="{{ url_for('upload_page') }}" role="button">Upload</a></li>
           <li><a href="{{ url_for('history') }}">History</a></li>
           <li><a href="{{ url_for('trips') }}">Trips</a></li>
+          {% if current_user.role == 'admin' %}
+          <li><a href="{{ url_for('admin_all_uploads') }}">Admin View</a></li>
+          {% endif %}
+          <li><a href="{{ url_for('logout') }}">Logout</a></li>
+          {% else %}
+          <li><a href="{{ url_for('login') }}">Login</a></li>
+          <li><a href="{{ url_for('register') }}">Register</a></li>
+          {% endif %}
         </ul>
       </nav>
     </header>
