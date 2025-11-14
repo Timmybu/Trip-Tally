@@ -507,23 +507,86 @@ def create_app() -> Flask:
 		flash("Receipt deleted successfully.", "success")
 		return redirect(url_for("history"))
 
-	@app.route("/admin/all_uploads")
+	@app.route("/drivers")
 	@login_required
 	@admin_required
-	def admin_all_uploads():
-		"""Admin view of all receipts from all users"""
+	def admin_drivers_list():
+		"""Admin view: list of all drivers"""
 		conn = get_db_connection(db_path)
-		all_receipts = conn.execute(
-			"""
-			SELECT r.*, u.username, t.name as trip_name
-			FROM receipts r
-			LEFT JOIN users u ON r.user_id = u.id
-			LEFT JOIN trips t ON r.trip_id = t.id
-			ORDER BY r.created_at DESC
-			"""
+		drivers = conn.execute(
+			"SELECT id, username FROM users WHERE role != 'admin' ORDER BY username"
 		).fetchall()
 		conn.close()
-		return render_template("admin_view.html", receipts=all_receipts)
+		return render_template("admin_drivers_list.html", drivers=drivers)
+
+	@app.route("/drivers/<int:user_id>")
+	@login_required
+	@admin_required
+	def admin_driver_detail(user_id):
+		"""Admin view: detailed view of a specific driver's trips with year filter"""
+		conn = get_db_connection(db_path)
+		
+		# Fetch the driver/user
+		user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+		if not user:
+			flash("Driver not found.", "error")
+			conn.close()
+			return redirect(url_for("admin_drivers_list"))
+		
+		# Get available years from receipts for this user
+		years_result = conn.execute(
+			"""
+			SELECT DISTINCT strftime('%Y', created_at) as year
+			FROM receipts
+			WHERE user_id = ? AND created_at IS NOT NULL AND created_at != ''
+			ORDER BY year DESC
+			""",
+			(user_id,)
+		).fetchall()
+		available_years = [row['year'] for row in years_result if row['year']]
+		
+		# Get year filter from query parameter
+		selected_year = request.args.get('year')
+		
+		# Build query for trips with optional year filter
+		if selected_year and selected_year in available_years:
+			# Fetch trips that have receipts in the selected year
+			trips_query = """
+				SELECT DISTINCT t.id, t.name,
+					COALESCE(SUM(r.total), 0) as total_spend,
+					MIN(r.date) as start_date,
+					MAX(r.date) as end_date
+				FROM trips t
+				LEFT JOIN receipts r ON t.id = r.trip_id AND r.user_id = ? AND strftime('%Y', r.created_at) = ?
+				WHERE t.user_id = ?
+				GROUP BY t.id, t.name
+				HAVING COUNT(r.id) > 0
+				ORDER BY t.name
+			"""
+			trips = conn.execute(trips_query, (user_id, selected_year, user_id)).fetchall()
+		else:
+			# Fetch all trips for this user with their totals
+			trips_query = """
+				SELECT t.id, t.name,
+					COALESCE(SUM(r.total), 0) as total_spend,
+					MIN(r.date) as start_date,
+					MAX(r.date) as end_date
+				FROM trips t
+				LEFT JOIN receipts r ON t.id = r.trip_id AND r.user_id = ?
+				WHERE t.user_id = ?
+				GROUP BY t.id, t.name
+				ORDER BY t.name
+			"""
+			trips = conn.execute(trips_query, (user_id, user_id)).fetchall()
+		
+		conn.close()
+		return render_template(
+			"admin_driver_detail.html",
+			driver=user,
+			trips=trips,
+			available_years=available_years,
+			selected_year=selected_year
+		)
 
 	return app
 

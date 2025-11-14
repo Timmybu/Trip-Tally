@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Driver: {{ driver.username }}</h2>
+  
+  <article>
+    <form method="GET" action="{{ url_for('admin_driver_detail', user_id=driver.id) }}">
+      <label for="year">
+        Filter by Year
+        <select name="year" id="year" onchange="this.form.submit()">
+          <option value="">All Years</option>
+          {% for year in available_years %}
+          <option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>
+            {{ year }}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+    </form>
+  </article>
+
+  <article>
+    <header>
+      <h3>Trips{% if selected_year %} ({{ selected_year }}){% endif %}</h3>
+    </header>
+    {% if trips %}
+      <table>
+        <thead>
+          <tr>
+            <th>Trip Name</th>
+            <th>Total Spend</th>
+            <th>Date Range</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for trip in trips %}
+          <tr>
+            <td>{{ trip.name }}</td>
+            <td>${{ "%.2f"|format(trip.total_spend) if trip.total_spend else '0.00' }}</td>
+            <td>
+              {% if trip.start_date and trip.end_date %}
+                {{ trip.start_date }} to {{ trip.end_date }}
+              {% elif trip.start_date %}
+                {{ trip.start_date }}
+              {% else %}
+                N/A
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No trips found{% if selected_year %} for year {{ selected_year }}{% endif %}.</p>
+    {% endif %}
+  </article>
+
+  <nav>
+    <a href="{{ url_for('admin_drivers_list') }}">Back to Drivers List</a>
+  </nav>
+</section>
+{% endblock %}
+

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Admin View - All Drivers</h2>
+  
+  {% if drivers %}
+    <table>
+      <thead>
+        <tr>
+          <th>Driver Username</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for driver in drivers %}
+        <tr>
+          <td>
+            <a href="{{ url_for('admin_driver_detail', user_id=driver.id) }}">
+              {{ driver.username }}
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <article>
+      <p>No drivers found.</p>
+    </article>
+  {% endif %}
+</section>
+{% endblock %}
+

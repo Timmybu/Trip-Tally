@@ -20,7 +20,7 @@
           <li><a href="{{ url_for('history') }}">History</a></li>
           <li><a href="{{ url_for('trips') }}">Trips</a></li>
           {% if current_user.role == 'admin' %}
-          <li><a href="{{ url_for('admin_all_uploads') }}">Admin View</a></li>
+          <li><a href="{{ url_for('admin_drivers_list') }}">Admin View</a></li>
           {% endif %}
           <li><a href="{{ url_for('logout') }}">Logout</a></li>
           {% else %}
