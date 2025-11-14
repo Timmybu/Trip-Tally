@@ -22,10 +22,11 @@ login_manager = LoginManager()
 
 
 class User(UserMixin):
-	def __init__(self, id, username, role):
+	def __init__(self, id, username, role, truck_number=""):
 		self.id = id
 		self.username = username
 		self.role = role
+		self.truck_number = truck_number
 
 
 @login_manager.user_loader
@@ -36,7 +37,18 @@ def load_user(user_id):
 	user_row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
 	conn.close()
 	if user_row:
-		return User(id=user_row['id'], username=user_row['username'], role=user_row['role'])
+		# Handle truck_number - it might not exist in older databases
+		truck_number = ''
+		try:
+			truck_number = user_row['truck_number'] or ''
+		except (KeyError, IndexError):
+			pass
+		return User(
+			id=user_row['id'],
+			username=user_row['username'],
+			role=user_row['role'],
+			truck_number=truck_number
+		)
 	return None
 
 
@@ -111,6 +123,13 @@ def init_db(db_path: str):
 	except sqlite3.OperationalError:
 		# Column already exists, ignore
 		pass
+	# Add truck_number column to existing users table if it doesn't exist
+	try:
+		conn.execute("ALTER TABLE users ADD COLUMN truck_number TEXT DEFAULT ''")
+		conn.commit()
+	except sqlite3.OperationalError:
+		# Column already exists, ignore
+		pass
 	conn.commit()
 	conn.close()
 
@@ -156,13 +175,14 @@ def create_app() -> Flask:
 		if request.method == "POST":
 			username = request.form.get("username", "").strip()
 			password = request.form.get("password", "").strip()
+			truck_number = request.form.get("truck_number", "").strip()
 			if not username or not password:
 				flash("Username and password are required.", "error")
 				return redirect(url_for('register'))
 			hash = generate_password_hash(password)
 			conn = get_db_connection(db_path)
 			try:
-				conn.execute("INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)", (username, hash, 'driver'))
+				conn.execute("INSERT INTO users (username, password_hash, role, truck_number) VALUES (?, ?, ?, ?)", (username, hash, 'driver', truck_number))
 				conn.commit()
 			except sqlite3.IntegrityError:
 				flash("Username already taken.", "error")
@@ -586,6 +606,47 @@ def create_app() -> Flask:
 			trips=trips,
 			available_years=available_years,
 			selected_year=selected_year
+		)
+
+	@app.route("/admin/reports")
+	@login_required
+	@admin_required
+	def admin_reports():
+		"""Admin view: fleet reports with yearly and quarterly totals"""
+		conn = get_db_connection(db_path)
+		
+		# Yearly totals
+		yearly_totals = conn.execute(
+			"""
+			SELECT 
+				strftime('%Y', date) as year, 
+				SUM(total) as total_spend 
+			FROM receipts 
+			WHERE date IS NOT NULL AND date != '' 
+			GROUP BY year 
+			ORDER BY year DESC
+			"""
+		).fetchall()
+		
+		# Quarterly totals
+		quarterly_totals = conn.execute(
+			"""
+			SELECT 
+				strftime('%Y', date) as year, 
+				(CAST(strftime('%m', date) AS INTEGER) - 1) / 3 + 1 as quarter, 
+				SUM(total) as total_spend 
+			FROM receipts 
+			WHERE date IS NOT NULL AND date != '' 
+			GROUP BY year, quarter 
+			ORDER BY year DESC, quarter DESC
+			"""
+		).fetchall()
+		
+		conn.close()
+		return render_template(
+			"admin_reports.html",
+			yearly_totals=yearly_totals,
+			quarterly_totals=quarterly_totals
 		)
 
 	return app

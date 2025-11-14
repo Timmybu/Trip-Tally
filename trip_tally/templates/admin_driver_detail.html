@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <section>
-  <h2>Driver: {{ driver.username }}</h2>
+  <h2>Driver: {{ driver.username }} (Truck: {{ driver.truck_number or 'N/A' }})</h2>
   
   <article>
     <form method="GET" action="{{ url_for('admin_driver_detail', user_id=driver.id) }}">

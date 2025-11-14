@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Fleet Reports</h2>
+  
+  <article>
+    <header>
+      <h3>Yearly Totals</h3>
+    </header>
+    {% if yearly_totals %}
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>Total Spend</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for yt in yearly_totals %}
+          <tr>
+            <td>{{ yt.year }}</td>
+            <td>${{ "%.2f"|format(yt.total_spend) if yt.total_spend else '0.00' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No yearly data available.</p>
+    {% endif %}
+  </article>
+
+  <article>
+    <header>
+      <h3>Quarterly Totals</h3>
+    </header>
+    {% if quarterly_totals %}
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th>Quarter</th>
+            <th>Total Spend</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for qt in quarterly_totals %}
+          <tr>
+            <td>{{ qt.year }}</td>
+            <td>Q{{ qt.quarter }}</td>
+            <td>${{ "%.2f"|format(qt.total_spend) if qt.total_spend else '0.00' }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No quarterly data available.</p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}
+
