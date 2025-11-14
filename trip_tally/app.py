@@ -334,6 +334,49 @@ def create_app() -> Flask:
 	def uploaded_file(filename):
 		return send_from_directory(upload_path, filename)
 
+	@app.route("/add_manual_expense", methods=["POST"])
+	@login_required
+	def add_manual_expense():
+		"""Add a manual expense without an image"""
+		merchant = request.form.get("merchant", "").strip()
+		date = request.form.get("date", "").strip()
+		total = request.form.get("total", "0").strip()
+		tax = request.form.get("tax", "0").strip()
+		trip_id = request.form.get("trip_id", "").strip()
+		
+		if not merchant or not date or not total:
+			flash("Merchant, date, and total are required.", "error")
+			return redirect(url_for("upload_page"))
+		
+		try:
+			total = float(total) if total else 0.0
+			tax = float(tax) if tax else 0.0
+			trip_id = int(trip_id) if trip_id and trip_id.isdigit() else None
+		except ValueError:
+			flash("Invalid numeric values.", "error")
+			return redirect(url_for("upload_page"))
+		
+		conn = get_db_connection(db_path)
+		conn.execute(
+			"INSERT INTO receipts (filename, merchant, date, total, tax, items, raw_text, created_at, trip_id, user_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+			(
+				None,  # No filename for manual entries
+				merchant,
+				date,
+				total,
+				tax,
+				"[]",  # Empty items list
+				"",  # No raw text
+				datetime.utcnow().isoformat(),
+				trip_id,
+				current_user.id,
+			),
+		)
+		conn.commit()
+		conn.close()
+		flash("Manual expense added successfully.", "success")
+		return redirect(url_for("history"))
+
 	@app.route("/trips", methods=["GET"])
 	@login_required
 	def trips():
@@ -357,6 +400,57 @@ def create_app() -> Flask:
 		conn.close()
 		flash(f"Trip '{name}' created successfully.", "success")
 		return redirect(url_for("trips"))
+
+	@app.route("/trip/<int:trip_id>")
+	@login_required
+	def trip_detail(trip_id):
+		"""Display trip detail page with calculated totals and date range"""
+		conn = get_db_connection(db_path)
+		# Fetch trip details (ensure it belongs to current user)
+		trip = conn.execute(
+			"SELECT * FROM trips WHERE id = ? AND user_id = ?", (trip_id, current_user.id)
+		).fetchone()
+		if not trip:
+			flash("Trip not found or you don't have permission to view it.", "error")
+			conn.close()
+			return redirect(url_for("trips"))
+		
+		# Fetch all receipts for this trip
+		receipts_list = conn.execute(
+			"""
+			SELECT r.*, t.name as trip_name
+			FROM receipts r
+			LEFT JOIN trips t ON r.trip_id = t.id
+			WHERE r.trip_id = ? AND r.user_id = ?
+			ORDER BY r.date ASC, r.created_at ASC
+			""",
+			(trip_id, current_user.id)
+		).fetchall()
+		
+		# Calculate total spend
+		total_result = conn.execute(
+			"SELECT SUM(total) as total_spend FROM receipts WHERE trip_id = ? AND user_id = ?",
+			(trip_id, current_user.id)
+		).fetchone()
+		total_spend = total_result['total_spend'] if total_result['total_spend'] else 0.0
+		
+		# Calculate date range
+		date_result = conn.execute(
+			"SELECT MIN(date) as start_date, MAX(date) as end_date FROM receipts WHERE trip_id = ? AND user_id = ? AND date IS NOT NULL AND date != ''",
+			(trip_id, current_user.id)
+		).fetchone()
+		start_date = date_result['start_date'] if date_result['start_date'] else None
+		end_date = date_result['end_date'] if date_result['end_date'] else None
+		
+		conn.close()
+		return render_template(
+			"trip_detail.html",
+			trip=trip,
+			receipts_list=receipts_list,
+			total_spend=total_spend,
+			start_date=start_date,
+			end_date=end_date
+		)
 
 	@app.route("/edit/<int:id>", methods=["GET"])
 	@login_required

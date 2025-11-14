@@ -23,7 +23,7 @@
     {% if trips %}
       <ul>
         {% for trip in trips %}
-        <li><strong>{{ trip.name }}</strong></li>
+        <li><a href="{{ url_for('trip_detail', trip_id=trip.id) }}">{{ trip.name }}</a></li>
         {% endfor %}
       </ul>
     {% else %}

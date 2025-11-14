@@ -18,6 +18,38 @@
     </label>
     <button type="submit">Process</button>
   </form>
+
+  <hr />
+
+  <h3>Or, Add Manual Expense</h3>
+  <form action="{{ url_for('add_manual_expense') }}" method="post">
+    <label for="manual_merchant">
+      Merchant
+      <input type="text" id="manual_merchant" name="merchant" placeholder="Merchant" required />
+    </label>
+    <label for="manual_date">
+      Date
+      <input type="date" id="manual_date" name="date" required />
+    </label>
+    <label for="manual_total">
+      Total
+      <input type="number" id="manual_total" name="total" step="0.01" placeholder="Total" required />
+    </label>
+    <label for="manual_tax">
+      Tax (optional)
+      <input type="number" id="manual_tax" name="tax" step="0.01" placeholder="Tax (optional)" />
+    </label>
+    <label for="manual_trip_id">
+      Trip (optional)
+      <select name="trip_id" id="manual_trip_id">
+        <option value="">-- No Trip --</option>
+        {% for trip in trips %}
+        <option value="{{ trip.id }}">{{ trip.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button type="submit">Add Manual Expense</button>
+  </form>
 </section>
 
 <script>
