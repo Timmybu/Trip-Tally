@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Trips</h2>
+  
+  <article>
+    <header>
+      <h3>Create New Trip</h3>
+    </header>
+    <form method="POST" action="{{ url_for('trips') }}">
+      <label for="name">
+        Trip Name
+        <input type="text" id="name" name="name" placeholder="e.g., Summer 2025 Road Trip" required />
+      </label>
+      <button type="submit">Create Trip</button>
+    </form>
+  </article>
+
+  <article>
+    <header>
+      <h3>All Trips</h3>
+    </header>
+    {% if trips %}
+      <ul>
+        {% for trip in trips %}
+        <li><strong>{{ trip.name }}</strong></li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No trips created yet. Create your first trip above!</p>
+    {% endif %}
+  </article>
+</section>
+{% endblock %}
+

@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Edit Receipt</h2>
+  
+  <form method="POST" action="{{ url_for('update_receipt', id=receipt.id) }}">
+    <label for="merchant">
+      Merchant
+      <input type="text" id="merchant" name="merchant" value="{{ receipt.merchant or '' }}" />
+    </label>
+    
+    <label for="date">
+      Date
+      <input type="text" id="date" name="date" value="{{ receipt.date or '' }}" placeholder="YYYY-MM-DD" />
+    </label>
+    
+    <label for="total">
+      Total
+      <input type="number" id="total" name="total" step="0.01" value="{{ receipt.total or 0 }}" />
+    </label>
+    
+    <label for="tax">
+      Tax
+      <input type="number" id="tax" name="tax" step="0.01" value="{{ receipt.tax or 0 }}" />
+    </label>
+    
+    <label for="trip_id">
+      Trip
+      <select name="trip_id" id="trip_id">
+        <option value="">-- No Trip --</option>
+        {% for trip in trips %}
+        <option value="{{ trip.id }}" {% if receipt.trip_id == trip.id %}selected{% endif %}>
+          {{ trip.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    
+    <div>
+      <button type="submit">Update Receipt</button>
+      <a href="{{ url_for('history') }}" role="button" class="secondary">Cancel</a>
+    </div>
+  </form>
+</section>
+{% endblock %}
+

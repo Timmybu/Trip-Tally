@@ -7,6 +7,15 @@
       <input type="file" id="file" name="file" accept="image/*" capture="environment" required />
       <p>Drag & drop or tap to select a photo</p>
     </div>
+    <label for="trip_id">
+      Trip (optional)
+      <select name="trip_id" id="trip_id">
+        <option value="">-- No Trip --</option>
+        {% for trip in trips %}
+        <option value="{{ trip.id }}">{{ trip.name }}</option>
+        {% endfor %}
+      </select>
+    </label>
     <button type="submit">Process</button>
   </form>
 </section>

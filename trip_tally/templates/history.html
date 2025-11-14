@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block content %}
+<section>
+  <h2>Upload History</h2>
+  
+  {% if receipts %}
+    <table>
+      <thead>
+        <tr>
+          <th>Merchant</th>
+          <th>Date</th>
+          <th>Total</th>
+          <th>Trip</th>
+          <th>File</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for receipt in receipts %}
+        <tr>
+          <td>{{ receipt.merchant or 'N/A' }}</td>
+          <td>{{ receipt.date or 'N/A' }}</td>
+          <td>${{ "%.2f"|format(receipt.total) if receipt.total else '0.00' }}</td>
+          <td>{{ receipt.trip_name or '—' }}</td>
+          <td>
+            <a href="{{ url_for('uploaded_file', filename=receipt.filename) }}" target="_blank">
+              {{ receipt.filename }}
+            </a>
+          </td>
+          <td>
+            <a href="{{ url_for('edit_receipt', id=receipt.id) }}" role="button" class="secondary">Edit</a>
+            <form action="{{ url_for('delete_receipt', id=receipt.id) }}" method="POST" style="display: inline;">
+              <button type="submit" class="contrast" onclick="return confirm('Are you sure you want to delete this receipt?');">Delete</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <article>
+      <p>No receipts processed yet. <a href="{{ url_for('upload_page') }}">Upload your first receipt</a>!</p>
+    </article>
+  {% endif %}
+  
+  <nav>
+    <a href="{{ url_for('upload_page') }}">Process another receipt</a>
+  </nav>
+</section>
+{% endblock %}
+

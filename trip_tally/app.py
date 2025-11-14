@@ -21,6 +21,16 @@ def get_db_connection(db_path: str):
 
 def init_db(db_path: str):
 	conn = get_db_connection(db_path)
+	# Create trips table
+	conn.execute(
+		"""
+		CREATE TABLE IF NOT EXISTS trips (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL
+		);
+		"""
+	)
+	# Create receipts table
 	conn.execute(
 		"""
 		CREATE TABLE IF NOT EXISTS receipts (
@@ -32,10 +42,19 @@ def init_db(db_path: str):
 			tax REAL,
 			items TEXT,
 			raw_text TEXT,
-			created_at TEXT
+			created_at TEXT,
+			trip_id INTEGER,
+			FOREIGN KEY (trip_id) REFERENCES trips(id)
 		);
 		"""
 	)
+	# Add trip_id column to existing receipts table if it doesn't exist
+	try:
+		conn.execute("ALTER TABLE receipts ADD COLUMN trip_id INTEGER")
+		conn.commit()
+	except sqlite3.OperationalError:
+		# Column already exists, ignore
+		pass
 	conn.commit()
 	conn.close()
 
@@ -64,7 +83,27 @@ def create_app() -> Flask:
 
 	@app.route("/upload")
 	def upload_page():
-		return render_template("upload.html")
+		"""Display upload page with trip selection"""
+		conn = get_db_connection(db_path)
+		trips = conn.execute("SELECT id, name FROM trips ORDER BY name").fetchall()
+		conn.close()
+		return render_template("upload.html", trips=trips)
+
+	@app.route("/history")
+	def history():
+		"""Display all previously processed receipts"""
+		conn = get_db_connection(db_path)
+		receipts = conn.execute(
+			"""
+			SELECT r.id, r.filename, r.merchant, r.date, r.total, r.created_at, r.trip_id,
+			       t.name as trip_name
+			FROM receipts r
+			LEFT JOIN trips t ON r.trip_id = t.id
+			ORDER BY r.created_at DESC
+			"""
+		).fetchall()
+		conn.close()
+		return render_template("history.html", receipts=receipts)
 
 	# In trip_tally/app.py
 
@@ -143,9 +182,11 @@ def create_app() -> Flask:
 			return redirect(url_for("upload_page"))
 
 		# Store in DB
+		trip_id = request.form.get('trip_id')
+		trip_id = int(trip_id) if trip_id and trip_id.isdigit() else None
 		conn = get_db_connection(db_path)
 		conn.execute(
-			"INSERT INTO receipts (filename, merchant, date, total, tax, items, raw_text, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+			"INSERT INTO receipts (filename, merchant, date, total, tax, items, raw_text, created_at, trip_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 			(
 				filename,
 				data.get("merchant", ""),
@@ -155,6 +196,7 @@ def create_app() -> Flask:
 				str(data.get("items") or []),
 				data.get("raw_text", ""),
 				datetime.utcnow().isoformat(),
+				trip_id,
 			),
 		)
 		conn.commit()
@@ -171,6 +213,80 @@ def create_app() -> Flask:
 	@app.get("/uploads/<path:filename>")
 	def uploaded_file(filename):
 		return send_from_directory(upload_path, filename)
+
+	@app.route("/trips", methods=["GET"])
+	def trips():
+		"""Display trips management page"""
+		conn = get_db_connection(db_path)
+		trips_list = conn.execute("SELECT id, name FROM trips ORDER BY name").fetchall()
+		conn.close()
+		return render_template("trips.html", trips=trips_list)
+
+	@app.route("/trips", methods=["POST"])
+	def create_trip():
+		"""Create a new trip"""
+		name = request.form.get("name", "").strip()
+		if not name:
+			flash("Trip name cannot be empty.", "error")
+			return redirect(url_for("trips"))
+		conn = get_db_connection(db_path)
+		conn.execute("INSERT INTO trips (name) VALUES (?)", (name,))
+		conn.commit()
+		conn.close()
+		flash(f"Trip '{name}' created successfully.", "success")
+		return redirect(url_for("trips"))
+
+	@app.route("/edit/<int:id>", methods=["GET"])
+	def edit_receipt(id):
+		"""Display edit receipt form"""
+		conn = get_db_connection(db_path)
+		receipt = conn.execute(
+			"SELECT * FROM receipts WHERE id = ?", (id,)
+		).fetchone()
+		if not receipt:
+			flash("Receipt not found.", "error")
+			conn.close()
+			return redirect(url_for("history"))
+		trips_list = conn.execute("SELECT id, name FROM trips ORDER BY name").fetchall()
+		conn.close()
+		return render_template("edit_receipt.html", receipt=receipt, trips=trips_list)
+
+	@app.route("/edit/<int:id>", methods=["POST"])
+	def update_receipt(id):
+		"""Update a receipt"""
+		merchant = request.form.get("merchant", "").strip()
+		date = request.form.get("date", "").strip()
+		total = request.form.get("total", "0").strip()
+		tax = request.form.get("tax", "0").strip()
+		trip_id = request.form.get("trip_id", "").strip()
+		
+		try:
+			total = float(total) if total else 0.0
+			tax = float(tax) if tax else 0.0
+			trip_id = int(trip_id) if trip_id and trip_id.isdigit() else None
+		except ValueError:
+			flash("Invalid numeric values.", "error")
+			return redirect(url_for("edit_receipt", id=id))
+		
+		conn = get_db_connection(db_path)
+		conn.execute(
+			"UPDATE receipts SET merchant = ?, date = ?, total = ?, tax = ?, trip_id = ? WHERE id = ?",
+			(merchant, date, total, tax, trip_id, id)
+		)
+		conn.commit()
+		conn.close()
+		flash("Receipt updated successfully.", "success")
+		return redirect(url_for("history"))
+
+	@app.route("/delete/<int:id>", methods=["POST"])
+	def delete_receipt(id):
+		"""Delete a receipt"""
+		conn = get_db_connection(db_path)
+		conn.execute("DELETE FROM receipts WHERE id = ?", (id,))
+		conn.commit()
+		conn.close()
+		flash("Receipt deleted successfully.", "success")
+		return redirect(url_for("history"))
 
 	return app
 

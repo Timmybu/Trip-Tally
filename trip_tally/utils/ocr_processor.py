@@ -79,17 +79,54 @@ def parse_receipt_text(lines: List[str]) -> Dict:
 			date = m.group(1)
 			break
 
-	# Totals
+# ... (keep merchant and date logic the same)
+
+	# --- IMPROVED TOTAL EXTRACTION ---
 	amount_re = r"\$?\s*([0-9]+(?:\.[0-9]{2})?)"
-	line_with_total = next((l for l in lines if re.search(r"\b(total|amount due)\b", l, re.I)), "")
-	line_with_tax = next((l for l in lines if re.search(r"\b(tax|hst|gst)\b", l, re.I)), "")
-
-	def extract_amount(line: str) -> str:
+	
+	# Strategy 1: Keyword Search (High Confidence)
+	# We look for lines explicitly labeled "Total", "Balance", etc.
+	total_keywords = r"\b(total|amount due|balance due|grand total)\b"
+	line_with_total = next((l for l in lines if re.search(total_keywords, l, re.I)), "")
+	
+	def extract_amount(line: str) -> float:
 		m = re.search(amount_re, line)
-		return m.group(1) if m else ""
+		if m:
+			try:
+				return float(m.group(1))
+			except ValueError:
+				return 0.0
+		return 0.0
 
-	total = extract_amount(line_with_total)
-	tax = extract_amount(line_with_tax)
+	total_val = extract_amount(line_with_total)
+
+	# Strategy 2: Largest Dollar Amount (Fallback)
+	# If Strategy 1 failed (total_val is 0), find the largest number preceded by a '$'
+	if total_val == 0.0:
+		all_dollar_values = []
+		# Regex requiring a '$' sign to be safe
+		strict_dollar_re = r"\$\s*([0-9]+\.[0-9]{2})"
+		
+		for line in lines:
+			# Find all matches in the line (in case multiple prices are on one line)
+			matches = re.findall(strict_dollar_re, line)
+			for m in matches:
+				try:
+					all_dollar_values.append(float(m))
+				except ValueError:
+					continue
+		
+		if all_dollar_values:
+			total_val = max(all_dollar_values)
+
+	# Convert back to string for consistency with your data structure, or keep as float
+	total = str(total_val) if total_val > 0 else ""
+	
+	# Tax Logic (Keep existing)
+	line_with_tax = next((l for l in lines if re.search(r"\b(tax|hst|gst|vat)\b", l, re.I)), "")
+	tax = str(extract_amount(line_with_tax)) if line_with_tax else ""
+
+	# ... (Rest of function)
 
 	# Items: heuristic - lines between merchant and total that look like item descriptions with an amount
 	items: List[Tuple[str, str]] = []

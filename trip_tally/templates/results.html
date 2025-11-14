@@ -2,16 +2,8 @@
 {% block content %}
 <section>
   <h2>Results</h2>
-  <div class="grid">
-    <div>
-      <h4>Warped</h4>
-      <img src="data:image/jpeg;base64,{{ warped_b64 }}" alt="Warped receipt" />
-    </div>
-    <div>
-      <h4>Preprocessed</h4>
-      <img src="data:image/jpeg;base64,{{ pre_b64 }}" alt="Preprocessed receipt" />
-    </div>
-  </div>
+  
+  <!-- Section A: Extracted Data (Always Visible) -->
   <article>
     <header>
       <h3>Extracted Data</h3>
@@ -22,11 +14,11 @@
       <li><strong>Total:</strong> {{ data.total }}</li>
       <li><strong>Tax:</strong> {{ data.tax }}</li>
     </ul>
-    {% if data.items %}
+    {% if data['items'] %}      
       <details>
         <summary>Items</summary>
         <ul>
-          {% for item, amount in data.items %}
+          {% for item, amount in data['items'] %}            
             <li>{{ item }} — {{ amount }}</li>
           {% endfor %}
         </ul>
@@ -37,8 +29,56 @@
       <pre style="white-space: pre-wrap">{{ data.raw_text }}</pre>
     </details>
   </article>
+
+  <!-- Section B: Images (Tabbed Interface) -->
+  <article>
+    <header>
+      <h3>Processed Images</h3>
+    </header>
+    <div role="tablist" class="image-tabs">
+      <button role="tab" aria-selected="true" aria-controls="warped-panel" id="warped-tab" class="tab-button">Warped</button>
+      <button role="tab" aria-selected="false" aria-controls="preprocessed-panel" id="preprocessed-tab" class="tab-button">Preprocessed</button>
+    </div>
+    <div role="tabpanel" id="warped-panel" aria-labelledby="warped-tab" class="tab-panel active">
+      <img src="data:image/jpeg;base64,{{ warped_b64 }}" alt="Warped receipt" />
+    </div>
+    <div role="tabpanel" id="preprocessed-panel" aria-labelledby="preprocessed-tab" class="tab-panel">
+      <img src="data:image/jpeg;base64,{{ pre_b64 }}" alt="Preprocessed receipt" />
+    </div>
+  </article>
+
   <a href="{{ url_for('upload_page') }}">Process another</a>
 </section>
+
+<script>
+  // Tab switching functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('[role="tab"]');
+    const panels = document.querySelectorAll('[role="tabpanel"]');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        const targetPanel = document.getElementById(this.getAttribute('aria-controls'));
+        
+        // Remove active state from all tabs and panels
+        tabs.forEach(t => {
+          t.setAttribute('aria-selected', 'false');
+          t.classList.remove('active');
+        });
+        panels.forEach(p => {
+          p.classList.remove('active');
+        });
+        
+        // Add active state to clicked tab and corresponding panel
+        this.setAttribute('aria-selected', 'true');
+        this.classList.add('active');
+        if (targetPanel) {
+          targetPanel.classList.add('active');
+        }
+      });
+    });
+  });
+</script>
 {% endblock %}
 
 

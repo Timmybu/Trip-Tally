@@ -22,3 +22,43 @@ img {
 	.grid { grid-template-columns: 1fr 1fr; }
 }
 
+/* Tab interface styles */
+.image-tabs {
+	display: flex;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+	border-bottom: 2px solid var(--muted-border-color);
+}
+
+.tab-button {
+	background: transparent;
+	border: none;
+	border-bottom: 2px solid transparent;
+	padding: 0.5rem 1rem;
+	cursor: pointer;
+	color: var(--muted-color);
+	transition: all 0.2s ease;
+	margin-bottom: -2px;
+}
+
+.tab-button:hover {
+	color: var(--color);
+	background: var(--muted-background);
+}
+
+.tab-button.active,
+.tab-button[aria-selected="true"] {
+	color: var(--color);
+	border-bottom-color: var(--color);
+	font-weight: 600;
+}
+
+.tab-panel {
+	display: none;
+	padding: 1rem 0;
+}
+
+.tab-panel.active {
+	display: block;
+}
+
